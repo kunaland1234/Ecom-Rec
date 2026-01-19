@@ -1,4 +1,4 @@
-# E-Commerce Recommendation System
+# Retailrocket Recommendation System
 
 This project is a step-by-step implementation of a real-world
 e-commerce recommendation system using the RetailRocket dataset.
@@ -22,3 +22,11 @@ RetailRocket implicit feedback dataset:
 ### How to run
 ```bash
 python src/evaluate.py
+
+
+## Phase 2 – Feature Engineering
+
+- Merged item category metadata
+- Added category-based features
+- Handled class imbalance
+- Saved trained model as .pkl
