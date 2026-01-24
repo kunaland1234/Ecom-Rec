@@ -16,8 +16,10 @@ def train():
 
 
     df=loadandcleanevent(path,cat_df)
-    y=df['label']
-    X=df.drop('label',axis=1)
+    FEATURES = ["category_id", "hour", "dayofweek"]
+
+    X = df[FEATURES]
+    y = df["label"]
     #Train Test Split
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=42,stratify=y)
 
@@ -31,3 +33,5 @@ def train():
     return model,X_test,y_test
 
 
+if __name__ == "__main__":
+    train()
