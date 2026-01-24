@@ -56,3 +56,24 @@ In Phase 4, the recommendation logic was exposed as a REST API using FastAPI.
 - Query parameter `n` to control number of recommendations
 - Model and data loaded once at application startup
 - JSON response with recommended item IDs and scores
+
+## Phase 5 – Docker Containerization
+
+In Phase 5, the FastAPI-based recommendation service was containerized using Docker
+to ensure reproducibility and environment consistency.
+
+### What is implemented
+- Dockerfile to build a lightweight Python image for the FastAPI service
+- docker-compose configuration to manage service runtime
+- Volume mounting for external data and trained models
+- Port exposure for local access to the API
+
+### Why Docker is used
+- Eliminates "works on my machine" issues
+- Ensures consistent runtime across environments
+- Prepares the service for cloud deployment
+
+### How to run locally
+
+Build and run using Docker Compose:
+docker-compose up
