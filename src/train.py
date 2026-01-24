@@ -1,4 +1,4 @@
-from preprocess import loadandcleanevent, load_item_categories
+from src.preprocess import load_and_clean_events, load_item_categories
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 import joblib
@@ -15,7 +15,7 @@ def train():
 
 
 
-    df=loadandcleanevent(path,cat_df)
+    df=load_and_clean_events(path,cat_df)
     FEATURES = ["category_id", "hour", "dayofweek"]
 
     X = df[FEATURES]

@@ -1,7 +1,7 @@
 import datetime
-from preprocess import loadandcleanevent, load_item_categories
-from candidate import build_popular_items
-from recommender import Recommender
+from src.preprocess import load_and_clean_events, load_item_categories
+from src.candidate import build_popular_items
+from src.recommender import Recommender
 
 
 cat_df = load_item_categories(
@@ -10,7 +10,7 @@ cat_df = load_item_categories(
 )
 
 
-events = loadandcleanevent("data/events.csv", cat_df)
+events = load_and_clean_events("data/events.csv", cat_df)
 
 popular_items = build_popular_items(events, top_k=50)
 

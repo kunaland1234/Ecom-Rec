@@ -1,7 +1,7 @@
 import pandas as pd
 
 
-def loadandcleanevent(path,cat_df):
+def load_and_clean_events(path,cat_df):
     df=pd.read_csv(path)
 
 
