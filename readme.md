@@ -19,8 +19,6 @@ machine learning pipeline.
 RetailRocket implicit feedback dataset:
 - events.csv (used in Phase 1)
 
-### How to run
-python src/evaluate.py
 
 
 ## Phase 2 – Feature Engineering
@@ -29,3 +27,32 @@ python src/evaluate.py
 - Added category-based features
 - Handled class imbalance
 - Saved trained model as .pkl
+
+
+## Phase 3 – Recommendation Logic (Retrieval + Ranking)
+
+In Phase 3, the trained machine learning model is converted into a
+working recommendation system.
+
+### What is implemented
+- Candidate generation using popular items per category
+- Reuse of trained model for purchase probability scoring
+- Ranking of candidate items by predicted probability
+- Top-N recommendation output
+
+### Recommendation Flow
+1. Identify user’s most recent interacted category
+2. Retrieve candidate items from the same category
+3. Score candidates using the trained ML model
+4. Rank items and return Top-N recommendations
+
+## Phase 4 – FastAPI Recommendation Service
+
+In Phase 4, the recommendation logic was exposed as a REST API using FastAPI.
+
+### What is implemented
+- FastAPI-based service for real-time recommendations
+- Endpoint: `/recommend/{user_id}`
+- Query parameter `n` to control number of recommendations
+- Model and data loaded once at application startup
+- JSON response with recommended item IDs and scores
