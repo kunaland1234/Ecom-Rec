@@ -23,6 +23,8 @@ app = FastAPI(title="E-Commerce Recommender")
 # -----------------------
 S3_BUCKET = os.getenv("S3_BUCKET")
 DATA_SOURCE = os.getenv("DATA_SOURCE", "s3")
+MODEL_VERSION = os.getenv("MODEL_VERSION", "v2")
+
 
 if not S3_BUCKET:
     raise RuntimeError("S3_BUCKET environment variable not set")
@@ -65,7 +67,7 @@ def startup():
     p1 = "/tmp/item_properties_part1.csv"
     p2 = "/tmp/item_properties_part2.csv"
     events_path = "/tmp/events.csv"
-    model_path = "/tmp/model_v2.pkl"
+    model_path = f"/tmp/model_{MODEL_VERSION}.pkl"
 
     # ---- Download data
     download_from_s3("data/item_properties_part1.csv", p1)
@@ -80,7 +82,7 @@ def startup():
     popular_items = build_popular_items(events, top_k=50)
 
     # ---- Load model (ONLY ONE)
-    download_from_s3("models/model_v2.pkl", model_path)
+    download_from_s3(f"models/model_{MODEL_VERSION}.pkl", model_path)
     recommender = Recommender(model_path)
 
     print("✅ Startup complete — recommender ready")
