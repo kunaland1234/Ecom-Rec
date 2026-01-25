@@ -5,3 +5,5 @@ matplotlib
 seaborn
 fastapi
 uvicorn
+boto3
+joblib

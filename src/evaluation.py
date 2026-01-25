@@ -1,4 +1,4 @@
-from train import train
+from src.train import train
 from sklearn.metrics import classification_report
 
 

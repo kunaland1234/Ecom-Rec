@@ -68,12 +68,30 @@ to ensure reproducibility and environment consistency.
 - Volume mounting for external data and trained models
 - Port exposure for local access to the API
 
-### Why Docker is used
-- Eliminates "works on my machine" issues
-- Ensures consistent runtime across environments
-- Prepares the service for cloud deployment
+## Phase 6 – Cloud Deployment (AWS ECR & ECS)
 
-### How to run locally
+In Phase 6, the Dockerized FastAPI recommendation service was deployed to
+AWS cloud infrastructure using Amazon ECR and Amazon ECS (Fargate),
+making the system production-ready and publicly accessible.
 
-Build and run using Docker Compose:
-docker-compose up
+### What is implemented
+- Docker image pushed to Amazon Elastic Container Registry (ECR)
+- ECS Task Definition configured with CPU and memory resources
+- ECS Fargate Service for serverless container execution
+- IAM Task Role for secure access to AWS services (e.g., S3 model download)
+- Application Load Balancer (ALB) for public HTTP access
+- Port mapping to expose FastAPI endpoints
+- Environment-based configuration (no credentials hard-coded)
+
+### Deployment Flow
+1. Build Docker image locally
+2. Push image to Amazon ECR
+3. Create ECS Task Definition using ECR image
+4. Run ECS Service on Fargate
+5. Access API via Load Balancer DNS
+
+### API Access
+Once deployed, the service is accessible via the public ALB endpoint:
+- /health
+- /recommend/{user_id}?n=5
+
