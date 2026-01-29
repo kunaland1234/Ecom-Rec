@@ -1,39 +1,25 @@
-import datetime
 from src.preprocess import load_and_clean_events, load_item_categories
 from src.candidate import build_popular_items
 from src.recommender import Recommender
-
+from src.build_feature import build_features
 
 cat_df = load_item_categories(
     "data/item_properties_part1.csv",
     "data/item_properties_part2.csv"
 )
 
+user_id = int(input("Enter user_id: "))
+k = int(input("Enter K (e.g. 5): "))
 
-events = load_and_clean_events("data/events.csv", cat_df)
+events,train_stata = load_and_clean_events("data/events.csv", cat_df,is_train=True)
 
-popular_items = build_popular_items(events, top_k=50)
+popular_items = build_popular_items(events, user_id)
 
+recommender = Recommender("models/model_v4.pkl")
 
-user_id = events["visitorid"].iloc[0]
+df = build_features(events, user_id, popular_items)
+scored = recommender.score_candidates(df)
+top_k = recommender.top_n(scored, n=k)
 
-user_events = events[events["visitorid"] == user_id]
-
-
-last_event = user_events.iloc[-1]
-user_category = last_event["category_id"]
-
-candidates = popular_items[
-    popular_items["category_id"] == user_category
-].copy()
-
-now = datetime.datetime.now()
-candidates["hour"] = now.hour
-candidates["dayofweek"] = now.weekday()
-
-recommender = Recommender("models/model_v2.pkl")
-scored = recommender.score_candidates(candidates)
-
-top_5 = recommender.top_n(scored, n=5)
-print("Top-5 Recommendations:")
-print(top_5)
+print(f"\nTop-{k} Recommendations for user {user_id}:")
+print(top_k)
