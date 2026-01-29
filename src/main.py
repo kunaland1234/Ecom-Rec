@@ -20,6 +20,9 @@ from src.recommender import Recommender
 # --------------------------------------------------
 # App
 # --------------------------------------------------
+
+print("🔥 API VERSION: 30-JAN-2026 — MAJOR API CHANGE 🔥")
+
 app = FastAPI(
     title="E-Commerce Recommendation API",
     description="Personalized product recommendations using machine learning",
