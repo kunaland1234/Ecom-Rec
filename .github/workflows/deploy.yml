@@ -7,9 +7,12 @@ on:
 
 env:
   AWS_REGION: ${{ secrets.AWS_REGION }}
+  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
   ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
   ECS_CLUSTER: ${{ secrets.ECS_CLUSTER }}
   ECS_SERVICE: ${{ secrets.ECS_SERVICE }}
+  TASK_FAMILY: ${{ secrets.TASK_FAMILY }}
+  CONTAINER_NAME: recommender
 
 jobs:
   deploy:
@@ -30,17 +33,57 @@ jobs:
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v2
 
-    - name: Build, tag, and push image to ECR
+    # -----------------------------
+    # Build & Push Docker Image
+    # -----------------------------
+    - name: Build, tag, and push image
       run: |
-        IMAGE_TAG=${{ github.sha }}
-        docker build -t $ECR_REPOSITORY:$IMAGE_TAG .
-        docker tag $ECR_REPOSITORY:$IMAGE_TAG \
-          ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG
-        docker push ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG
+        IMAGE_TAG=${GITHUB_SHA::7}
+        IMAGE_URI=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}
 
-    - name: Force new ECS deployment
+        docker build --no-cache -t ${IMAGE_URI} .
+        docker push ${IMAGE_URI}
+
+        echo "IMAGE_URI=${IMAGE_URI}" >> $GITHUB_ENV
+
+    # -----------------------------
+    # Fetch existing task definition
+    # -----------------------------
+    - name: Get current task definition
+      run: |
+        aws ecs describe-task-definition \
+          --task-definition ${TASK_FAMILY} \
+          --query taskDefinition \
+          > task-def.json
+
+    # -----------------------------
+    # Create new task definition revision
+    # -----------------------------
+    - name: Register new task definition revision
+      run: |
+        cat task-def.json \
+          | jq --arg IMAGE "$IMAGE_URI" '
+            del(
+              .taskDefinitionArn,
+              .revision,
+              .status,
+              .requiresAttributes,
+              .compatibilities,
+              .registeredAt,
+              .registeredBy
+            )
+            | .containerDefinitions[0].image = $IMAGE
+          ' > new-task-def.json
+
+        aws ecs register-task-definition \
+          --cli-input-json file://new-task-def.json
+
+    # -----------------------------
+    # Update ECS Service
+    # -----------------------------
+    - name: Update ECS service
       run: |
         aws ecs update-service \
-          --cluster $ECS_CLUSTER \
-          --service $ECS_SERVICE \
+          --cluster ${ECS_CLUSTER} \
+          --service ${ECS_SERVICE} \
           --force-new-deployment
