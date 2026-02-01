@@ -5,117 +5,85 @@ on:
     branches:
       - main
 
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+  ECS_CLUSTER: ${{ secrets.ECS_CLUSTER }}
+  ECS_SERVICE: ${{ secrets.ECS_SERVICE }}
+  TASK_FAMILY: ${{ secrets.TASK_FAMILY }}
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
+    
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-
+    
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ secrets.AWS_REGION }}
-
+    
     - name: Login to Amazon ECR
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v2
-
-    # -----------------------------
-    # Build & Push Docker Image
-    # -----------------------------
-    - name: Build, tag, and push image
+    
+    - name: Build, tag, and push image to ECR
+      id: build-image
       run: |
-        IMAGE_TAG=${GITHUB_SHA::7}
-        IMAGE_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:${IMAGE_TAG}
-
-        echo "Building image: ${IMAGE_URI}"
-        docker build --no-cache -t ${IMAGE_URI} .
-        docker push ${IMAGE_URI}
-
-        echo "IMAGE_URI=${IMAGE_URI}" >> $GITHUB_ENV
-
-    # -----------------------------
-    # Fetch existing task definition
-    # -----------------------------
-    - name: Get current task definition
+        IMAGE_TAG=${{ github.sha }}
+        ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}
+        IMAGE_URI=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        
+        echo "Building image: $IMAGE_URI"
+        docker build -t $IMAGE_URI .
+        docker push $IMAGE_URI
+        
+        echo "image=$IMAGE_URI" >> $GITHUB_OUTPUT
+    
+    - name: Download current task definition
       run: |
         aws ecs describe-task-definition \
-          --task-definition ${{ secrets.TASK_FAMILY }} \
-          --query taskDefinition \
-          > task-def.json
-
-    # -----------------------------
-    # Create new task definition revision
-    # -----------------------------
-    - name: Register new task definition revision
+          --task-definition $TASK_FAMILY \
+          --query taskDefinition > task-definition.json
+    
+    - name: Update task definition with new image
+      id: task-def
       run: |
-        cat task-def.json \
-          | jq --arg IMAGE "$IMAGE_URI" '
-            del(
-              .taskDefinitionArn,
-              .revision,
-              .status,
-              .requiresAttributes,
-              .compatibilities,
-              .registeredAt,
-              .registeredBy
-            )
-            | .containerDefinitions[0].image = $IMAGE
-          ' > new-task-def.json
-
-        echo "Registering new task definition with image: $IMAGE_URI"
+        NEW_IMAGE="${{ steps.build-image.outputs.image }}"
+        echo "Updating task definition with image: $NEW_IMAGE"
         
-        NEW_TASK_DEF_ARN=$(aws ecs register-task-definition \
-          --cli-input-json file://new-task-def.json \
+        NEW_TASK_DEF=$(cat task-definition.json | jq --arg IMAGE "$NEW_IMAGE" \
+          'del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy) |
+           .containerDefinitions[0].image = $IMAGE')
+        
+        echo "$NEW_TASK_DEF" > new-task-definition.json
+        
+        NEW_REVISION=$(aws ecs register-task-definition \
+          --cli-input-json file://new-task-definition.json \
           --query 'taskDefinition.taskDefinitionArn' \
           --output text)
         
-        echo "New task definition: ${NEW_TASK_DEF_ARN}"
-        echo "NEW_TASK_DEF_ARN=${NEW_TASK_DEF_ARN}" >> $GITHUB_ENV
-
-    # -----------------------------
-    # Update ECS Service
-    # -----------------------------
+        echo "New task definition registered: $NEW_REVISION"
+        echo "revision=$NEW_REVISION" >> $GITHUB_OUTPUT
+    
     - name: Update ECS service
       run: |
-        echo "Updating ECS service with task definition: ${NEW_TASK_DEF_ARN}"
+        echo "Updating ECS service to use: ${{ steps.task-def.outputs.revision }}"
         
         aws ecs update-service \
-          --cluster ${{ secrets.ECS_CLUSTER }} \
-          --service ${{ secrets.ECS_SERVICE }} \
-          --task-definition ${NEW_TASK_DEF_ARN} \
+          --cluster $ECS_CLUSTER \
+          --service $ECS_SERVICE \
+          --task-definition ${{ steps.task-def.outputs.revision }} \
           --force-new-deployment
-
-    # -----------------------------
-    # Wait for deployment to complete
-    # -----------------------------
-    - name: Wait for service stability
+    
+    - name: Wait for deployment
       run: |
         echo "Waiting for service to stabilize..."
         aws ecs wait services-stable \
-          --cluster ${{ secrets.ECS_CLUSTER }} \
-          --services ${{ secrets.ECS_SERVICE }}
-        
-        echo "Deployment completed successfully!"
-
-    # -----------------------------
-    # Verify running image
-    # -----------------------------
-    - name: Verify deployment
-      run: |
-        echo "Verifying running tasks..."
-        RUNNING_IMAGE=$(aws ecs describe-services \
-          --cluster ${{ secrets.ECS_CLUSTER }} \
-          --services ${{ secrets.ECS_SERVICE }} \
-          --query 'services[0].taskDefinition' \
-          --output text | xargs -I {} aws ecs describe-task-definition \
-          --task-definition {} \
-          --query 'taskDefinition.containerDefinitions[0].image' \
-          --output text)
-        
-        echo "Currently running image: ${RUNNING_IMAGE}"
-        echo "Expected image: ${IMAGE_URI}"
+          --cluster $ECS_CLUSTER \
+          --services $ECS_SERVICE
+        echo "✅ Deployment completed successfully!"
