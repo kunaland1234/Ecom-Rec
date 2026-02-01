@@ -1,11 +1,11 @@
 """
 Feature builder for real-time recommendation scoring.
 
-This module creates feature vectors for candidate items at inference time,
-ensuring consistency with the training pipeline.
+FIXED: Handles cases where candidate items may not exist in the preprocessed data.
 """
 
 import pandas as pd
+import numpy as np
 
 
 def build_features(df, visitorid, itemids):
@@ -23,20 +23,50 @@ def build_features(df, visitorid, itemids):
         DataFrame with features for each candidate item, including 'itemid' column
     """
     # Use the latest timestamp in the dataset as reference point
-    # (same as training preprocessing logic)
     reference_time = df['timestamp'].max()
 
     # Get base features for candidate items (these are precomputed during preprocessing)
-    base = df[df["itemid"].isin(itemids)].drop_duplicates("itemid")[[
-        "itemid",
-        "category_id",
-        "item_popularity",
-        "item_conversion_rate",
-        "recent_item_popularity",
-        "item_popularity_ratio",
-        "category_popularity",
-        "category_conversion_rate",
-    ]].copy()
+    # CRITICAL: Use the latest occurrence of each item to get most recent features
+    base = (
+        df[df["itemid"].isin(itemids)]
+        .sort_values('timestamp', ascending=False)  # Get latest occurrence
+        .drop_duplicates("itemid", keep='first')    # Keep most recent
+        [[
+            "itemid",
+            "category_id",
+            "item_popularity",
+            "item_conversion_rate",
+            "recent_item_popularity",
+            "item_popularity_ratio",
+            "category_popularity",
+            "category_conversion_rate",
+        ]]
+        .copy()
+    )
+    
+    # Check if all candidate items were found
+    found_items = set(base['itemid'])
+    missing_items = set(itemids) - found_items
+    
+    if missing_items:
+        print(f"   ⚠️  Warning: {len(missing_items)} items not found in preprocessed data")
+        # Create placeholder rows for missing items with default values
+        missing_rows = []
+        for item_id in missing_items:
+            missing_rows.append({
+                'itemid': item_id,
+                'category_id': -1,  # Unknown category
+                'item_popularity': 0,
+                'item_conversion_rate': 0,
+                'recent_item_popularity': 0,
+                'item_popularity_ratio': 1.0,
+                'category_popularity': 0,
+                'category_conversion_rate': 0
+            })
+        
+        if missing_rows:
+            missing_df = pd.DataFrame(missing_rows)
+            base = pd.concat([base, missing_df], ignore_index=True)
 
     # Get user's historical interactions
     user_df = df[df["visitorid"] == visitorid]
@@ -103,7 +133,6 @@ def build_features(df, visitorid, itemids):
     ]
 
     # Create output DataFrame with features + itemid
-    X = base[FEATURES].copy()
-    X["itemid"] = base["itemid"]
+    X = base[FEATURES + ["itemid"]].copy()
 
-    return X    
+    return X

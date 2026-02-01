@@ -8,3 +8,4 @@ uvicorn
 boto3
 joblib
 lightgbm
+cmfrec
