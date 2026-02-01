@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 # --------------------------------------------------
 # App
 # --------------------------------------------------
-print("🔥 API VERSION: 30-JAN-2026 — HYBRID MODEL (LGB + MF) 🔥")
+print("API VERSION: HYBRID MODEL (LGB + MF)")
 
 app = FastAPI(
     title="E-Commerce Recommendation API",
@@ -183,6 +183,12 @@ def startup():
 # --------------------------------------------------
 # Endpoints
 # --------------------------------------------------
+
+@app.get("/health", include_in_schema=False)
+def health():
+    return {"status": "ok"}
+
+
 @app.get("/")
 def health_check():
     """
