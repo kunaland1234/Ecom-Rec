@@ -181,7 +181,7 @@ def startup():
 
 
 # --------------------------------------------------
-# Endpoints
+# Endpoint
 # --------------------------------------------------
 
 @app.get("/health", include_in_schema=False)
