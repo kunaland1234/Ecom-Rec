@@ -94,7 +94,7 @@ def startup():
     events_df, train_stats = load_and_clean_events(
         events_path,
         cat_df,
-        is_train=False
+        is_train=True
     )
 
     # Load model
