@@ -356,12 +356,6 @@ The project uses **GitHub Actions** for automated deployment to AWS.
 Code Push → GitHub Actions → Docker Build → ECR Push → ECS Update → Live Service
 ```
 
-The CI/CD pipeline ensures:
-- Automated testing before deployment
-- Zero-downtime updates
-- Rollback capability
-- Version tracking in ECR
-
 ## Quick Start
 
 ### Test the Live API (No Installation Required!)
