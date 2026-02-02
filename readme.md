@@ -420,8 +420,3 @@ Ecom-Rec/
 ├── .gitignore
 └── README.md
 ```
-
-## Links
-
-- **Live API:** http://ecom-rec-alb-711173304.eu-north-1.elb.amazonaws.com
-- **GitHub Repository:** https://github.com/kunaland1234/Ecom-Rec
