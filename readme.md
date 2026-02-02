@@ -1,11 +1,11 @@
 # Retailrocket Recommendation System
 
 
-A production-ready hybrid recommendation system built from scratch, deployed on AWS with FastAPI. This project evolved through multiple phases, from a simple logistic regression baseline to a sophisticated hybrid model combining LightGBM and Matrix Factorization, with iterative improvements along the way.
+A hybrid recommendation system built from scratch, deployed on AWS with FastAPI. This project evolved through multiple phases, from a simple logistic regression baseline to a sophisticated hybrid model combining LightGBM and Matrix Factorization, with iterative improvements along the way.
 
 ## Project Overview
 
-This recommendation system predicts which products users are likely to purchase based on their browsing and interaction history. The system handles both warm-start users (with historical data) and cold-start users (new to the platform) through hybrid approach.
+This recommendation system predicts which products users are likely to purchase based on their interaction history. The system handles both warm-start users (with historical data) and cold-start users (new to the platform) through hybrid approach.
 
 **Key Features:**
 - Hybrid recommendation model (LightGBM + Matrix Factorization)
@@ -193,17 +193,6 @@ The project development is documented through Jupyter notebooks in the `notebook
    - User behavior aggregations
    - Matrix Factorization integration
 
-5. **`05_Hybrid_Optimization.ipynb`**
-   - Mixing weight experimentation
-   - Warm vs cold user analysis
-   - Threshold optimization
-   - Final model evaluation
-
-These notebooks serve as:
-- Experimental playground for new ideas
-- Documentation of decision-making process
-- Reproducible analysis for model iterations
-
 ### API Endpoints
 
 **Base URL:** `http://ecom-rec-alb-711173304.eu-north-1.elb.amazonaws.com`
@@ -314,13 +303,6 @@ Returns user behavior statistics and warm/cold status.
   "last_seen": "2015-08-01 07:10:35.296000"
 }
 ```
-
-**Error Responses:**
-- `404`: User not found
-- `400`: Invalid parameters
-- `503`: Service not ready
-- `500`: Internal server error
-
 ## Deployment
 
 ### AWS Infrastructure
@@ -335,7 +317,6 @@ Returns user behavior statistics and warm/cold status.
 - Load balancer for high availability
 
 **S3 Storage:**
-- Model artifacts (LightGBM, MF)
 - Raw data files
 - Versioned model storage
 
@@ -378,7 +359,7 @@ pip install -r requirements.txt
 # Set environment variables
 export S3_BUCKET=your-bucket-name
 export MODEL_VERSION=v3.0
-export MF_ALPHA=0.35
+export MF_ALPHA=0.30
 
 # Run locally
 uvicorn src.main:app --host 0.0.0.0 --port 8000
@@ -413,7 +394,7 @@ Ecom-Rec/
 │   ├── 02_item_properties_exploration.ipynb
 │   ├── 03_Enhancing_ML_Model.ipynb
 │   ├── 04_Adding_More_Features.ipynb
-│   └── 05_Hybrid_Optimization.ipynb
+│ 
 ├── evaluation_results/    # Model evaluation metrics and plots
 │   ├── confusion_matrix.png
 │   ├── feature_importance.png
